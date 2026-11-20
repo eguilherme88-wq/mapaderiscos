@@ -1,0 +1,21 @@
+{
+  "id": "./?app=mapa-de-riscos-cipa",
+  "name": "Mapa de Riscos",
+  "short_name": "Mapa de Riscos",
+  "description": "Elaboração de mapas de risco (NR-5) com planta baixa, círculos de risco e exportação em PNG, PDF e SVG.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#22313B",
+  "theme_color": "#22313B",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

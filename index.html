@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mapa de Riscos</title>
+<meta name="description" content="Elaboração de mapas de risco (NR-5) com planta baixa e exportação em PNG, PDF e SVG.">
+<meta name="theme-color" content="#22313B">
+<meta name="application-name" content="Mapa de Riscos">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mapa de Riscos">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
@@ -184,6 +195,36 @@ button,input,select,textarea{font:inherit;color:inherit}
   .brand small{max-width:70vw}
   .hint{font-size:12.5px}
 }
+
+/* ---------- painel lateral retrátil ---------- */
+.app{transition:grid-template-columns .22s ease}
+.app.pcol{grid-template-columns:84px minmax(0,1fr) 0}
+.app.pcol .panel{visibility:hidden;border-left:0;overflow:hidden}
+.ptog{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:3;width:24px;height:72px;padding:0;border:1px solid var(--line);border-right:0;border-radius:9px 0 0 9px;background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:-2px 0 6px rgba(0,0,0,.08)}
+.ptog:hover{color:var(--ink);background:var(--surface2)}
+.ptog svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+.app.pcol .ptog svg{transform:rotate(180deg)}
+.app.pcol .ptog{color:#fff;background:var(--accent);border-color:var(--accent)}
+.app.wide .ptog{display:none}
+@media (prefers-reduced-motion: reduce){.app,.ptog svg{transition:none}}
+@media (max-width:860px){
+  .ptog{top:12px;right:12px;transform:none;width:44px;height:38px;border-right:1px solid var(--line);border-radius:8px}
+  .hint{max-width:calc(100% - 80px)}
+  .ptog svg{transform:rotate(90deg)}
+  .app.pcol .ptog svg{transform:rotate(-90deg)}
+  .app.pcol{grid-template-columns:1fr;grid-template-rows:auto auto minmax(320px,1fr);height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+  .app.pcol .panel{display:none}
+}
+
+/* ---------- instalar app ---------- */
+.tbtn.install{display:flex;align-items:center;gap:6px}
+.tbtn.install[hidden]{display:none}
+.tbtn.install svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.steps{margin:0 0 14px;padding-left:22px}
+.steps li{margin-bottom:8px}
+.steps b{font-weight:700}
+.plat{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+@media (max-width:560px){.tbtn.install span{display:none}}
 </style>
 </head>
 <body>
@@ -202,6 +243,7 @@ button,input,select,textarea{font:inherit;color:inherit}
       <button class="tbtn" id="btnPDF">PDF</button>
       <button class="tbtn" id="btnSVG">SVG</button>
       <div class="sep"></div>
+      <button class="tbtn install" id="btnInstall" title="Instalar como aplicativo no computador, celular ou tablet" hidden><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Instalar app</span></button>
       <button class="tbtn icon" id="btnTheme" title="Tema claro ou escuro" aria-label="Alternar tema claro ou escuro"></button>
       <button class="tbtn icon" id="btnFull" title="Tela cheia" aria-label="Tela cheia"></button>
       <button class="tbtn icon" id="btnLock" title="Bloquear" aria-label="Bloquear"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
@@ -232,9 +274,10 @@ button,input,select,textarea{font:inherit;color:inherit}
       <button id="zFit">Ajustar</button>
       <button id="zAll" title="Selecionar toda a planta (Ctrl+A)">Selecionar tudo</button>
     </div>
+    <button class="ptog" id="ptog" aria-controls="sidePanel" aria-expanded="true" title="Recolher painel (P)" aria-label="Recolher painel"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
   </main>
 
-  <aside class="panel">
+  <aside class="panel" id="sidePanel">
     <section id="propSec"><h2>Item selecionado</h2><div id="props"></div></section>
     <section><h2>Riscos marcados</h2><div id="riskList"></div></section>
     <section><h2>Planta de fundo</h2><div id="bgPanel"></div></section>
@@ -289,6 +332,14 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="card preview" role="dialog" aria-modal="true">
     <button class="closeX" id="prevClose" aria-label="Fechar">×</button>
     <div class="inner" id="prevBody"></div>
+  </div>
+</div>
+
+<div class="modal" id="instModal">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="instTitle">
+    <div class="stripe"><i style="background:#2E9E44"></i><i style="background:#D62828"></i><i style="background:#8B5A2B"></i><i style="background:#F2C200"></i><i style="background:#1F5FBF"></i></div>
+    <button class="closeX" id="instClose" aria-label="Fechar">×</button>
+    <div class="inner" id="instBody"></div>
   </div>
 </div>
 
@@ -789,6 +840,13 @@ function renderPanel(){
   }
   h+=`<div class="btnrow"><button class="pbtn" data-act="dup">Duplicar</button><button class="pbtn danger" data-act="del">Excluir</button></div>`;
   box.innerHTML=h;
+  panelHint();
+}
+let panelHinted=false;
+function panelHint(){
+  const a=document.querySelector('.app');
+  if(panelHinted||!a||!a.classList.contains('pcol')||!(sel||msel.length))return;
+  panelHinted=true;toast('Painel recolhido. Toque na aba laranja ou tecle P para editar o item.');
 }
 const props=$('#props');
 props.addEventListener('focusin',e=>{const t=e.target;if(t.matches('input[type=text],input[type=number],textarea'))pushHist();});
@@ -1106,12 +1164,13 @@ document.addEventListener('keydown',e=>{
   if(typing||e.ctrlKey||e.metaKey||e.altKey)return;
   if(e.key===' '){spaceDown=true;e.preventDefault();return;}
   if((e.key==='Delete'||e.key==='Backspace')&&(sel||msel.length)){e.preventDefault();props.querySelector(msel.length?'[data-act="gdel"]':'[data-act="del"]')?.click();return;}
-  if(e.key==='Escape'){if($('#prevModal').classList.contains('open'))return $('#prevModal').classList.remove('open');draft=null;drag=null;sel=null;msel=[];setTool('select');render();renderPanel();return;}
+  if(e.key==='Escape'){if($('#instModal').classList.contains('open'))return $('#instModal').classList.remove('open');if($('#prevModal').classList.contains('open'))return $('#prevModal').classList.remove('open');draft=null;drag=null;sel=null;msel=[];setTool('select');render();renderPanel();return;}
   if(e.key.startsWith('Arrow')&&msel.length){e.preventDefault();const st=e.shiftKey?10:1;const dx=e.key==='ArrowLeft'?-st:e.key==='ArrowRight'?st:0,dy=e.key==='ArrowUp'?-st:e.key==='ArrowDown'?st:0;pushHist();msel.forEach(id=>{const it=find(id);moveItem(it,JSON.parse(JSON.stringify(it)),dx,dy);});changed();return;}
   if(e.key.startsWith('Arrow')&&sel){
     e.preventDefault();const it=find(sel);const st=e.shiftKey?10:1;const dx=e.key==='ArrowLeft'?-st:e.key==='ArrowRight'?st:0,dy=e.key==='ArrowUp'?-st:e.key==='ArrowDown'?st:0;
     pushHist();if(it.type==='wall'){it.x1+=dx;it.x2+=dx;it.y1+=dy;it.y2+=dy;}else{it.x+=dx;it.y+=dy;}changed();return;
   }
+  if(e.key.toLowerCase()==='p'){togglePanel();return;}
   const t=TOOLS.find(t=>t.key&&t.key.toLowerCase()===e.key.toLowerCase());
   if(t)setTool(t.id);
 });
@@ -1215,6 +1274,81 @@ $('#btnLock').onclick=lockNow;
 $('#btnLock2').onclick=lockNow;
 $('#btnChPw').onclick=()=>renderLock(getPw()?'change':'setup');
 renderLock(getPw()?'login':'setup');
+
+/* ---------- painel lateral retrátil ---------- */
+function setPanel(collapsed,save){
+  const a=$('.app'), b=$('#ptog');
+  a.classList.toggle('pcol',collapsed);
+  const lbl=collapsed?'Mostrar painel (P)':'Recolher painel (P)';
+  b.title=lbl;b.setAttribute('aria-label',lbl);b.setAttribute('aria-expanded',String(!collapsed));
+  if(save){try{localStorage.setItem('mapaRiscos:painel',collapsed?'1':'0');}catch(e){}}
+  requestAnimationFrame(render);setTimeout(render,260);
+}
+function togglePanel(){const c=!$('.app').classList.contains('pcol');setPanel(c,true);if(!c)panelHinted=false;}
+$('#ptog').onclick=togglePanel;
+try{if(localStorage.getItem('mapaRiscos:painel')==='1')setPanel(true,false);}catch(e){}
+
+/* ---------- instalar como app (PWA) ---------- */
+let instEvt=null;
+const UA=navigator.userAgent;
+const P={
+  ios:/iPad|iPhone|iPod/.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),
+  android:/Android/i.test(UA),
+  firefox:/Firefox|FxiOS/i.test(UA),
+  samsung:/SamsungBrowser/i.test(UA),
+  edge:/Edg\//.test(UA),
+  macSafari:/Macintosh/.test(UA)&&/Safari/.test(UA)&&!/Chrome|Chromium|Edg|OPR|Firefox/.test(UA)&&!(navigator.maxTouchPoints>1)
+};
+const secureCtx=location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
+function isStandalone(){return navigator.standalone===true||['standalone','minimal-ui','window-controls-overlay'].some(m=>matchMedia(`(display-mode: ${m})`).matches);}
+function updInstall(){$('#btnInstall').hidden=isStandalone();}
+updInstall();
+try{matchMedia('(display-mode: standalone)').addEventListener('change',updInstall);}catch(e){}
+
+if('serviceWorker' in navigator&&secureCtx&&!window.claude){
+  navigator.serviceWorker.register('sw.js',{scope:'./'}).then(reg=>{
+    reg.addEventListener('updatefound',()=>{const w=reg.installing;if(!w)return;
+      w.addEventListener('statechange',()=>{if(w.state==='activated'&&navigator.serviceWorker.controller)toast('Nova versão do app carregada. Ela vale a partir da próxima abertura.');});});
+  }).catch(()=>{});
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEvt=e;updInstall();});
+window.addEventListener('appinstalled',()=>{instEvt=null;updInstall();$('#instModal').classList.remove('open');toast('App instalado. Procure “Mapa de Riscos” nos seus aplicativos.');});
+
+function installHelp(){
+  const url=location.href.split('#')[0].split('?')[0];
+  const note='<p class="note">O app instalado abre em janela própria, com ícone próprio, e funciona sem internet depois da primeira abertura. Seus mapas continuam salvos como antes.</p>';
+  let h='<h2 id="instTitle">Instalar o Mapa de Riscos</h2>';
+  if(!secureCtx){
+    h+=`<p class="lead">A instalação só funciona quando o sistema é aberto pelo endereço publicado na internet (https), não pelo arquivo salvo no computador.</p><ol class="steps"><li>Abra o endereço do sistema publicado, por exemplo <b>https://eguilherme88-wq.github.io/mapaderiscos/</b>.</li><li>Clique em <b>Instalar app</b> de novo.</li></ol>`;
+  }else if(P.ios){
+    h+=`<span class="plat">iPhone e iPad</span><ol class="steps"><li>Abra este endereço no <b>Safari</b> (no Chrome do iPhone/iPad também funciona a partir do iOS 16.4).</li><li>Toque no botão <b>Compartilhar</b> (quadrado com seta para cima).</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Confirme em <b>Adicionar</b>. O ícone aparece na tela inicial.</li></ol>`;
+  }else if(P.android&&P.firefox){
+    h+=`<span class="plat">Android, Firefox</span><ol class="steps"><li>Toque no menu <b>⋮</b>.</li><li>Toque em <b>Instalar</b> ou <b>Adicionar à tela inicial</b>.</li></ol>`;
+  }else if(P.android&&P.samsung){
+    h+=`<span class="plat">Android, Samsung Internet</span><ol class="steps"><li>Toque no menu <b>≡</b>.</li><li>Toque em <b>Adicionar página a</b> e depois em <b>Tela inicial</b>.</li></ol>`;
+  }else if(P.android){
+    h+=`<span class="plat">Android, celular e tablet</span><ol class="steps"><li>Toque no menu <b>⋮</b> do navegador.</li><li>Toque em <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</li><li>Confirme em <b>Instalar</b>.</li></ol>`;
+  }else if(P.firefox){
+    h+=`<span class="plat">Computador, Firefox</span><p class="lead">O Firefox para computador não instala aplicativos web. Use o Chrome, Edge, Brave ou Chromium, no Windows ou no Linux:</p><ol class="steps"><li>Abra <b>${esc(url)}</b> nesse navegador.</li><li>Clique em <b>Instalar app</b> no topo do sistema.</li></ol>`;
+  }else if(P.macSafari){
+    h+=`<span class="plat">Mac, Safari</span><ol class="steps"><li>No menu <b>Arquivo</b>, clique em <b>Adicionar ao Dock</b>.</li><li>Confirme em <b>Adicionar</b>.</li></ol>`;
+  }else{
+    h+=`<span class="plat">Computador Windows ou Linux</span><ol class="steps"><li>Na barra de endereço, clique no ícone de <b>instalar</b> (monitor com seta, à direita do endereço).</li><li>Ou abra o menu ${P.edge?'<b>…</b> › <b>Aplicativos</b> › <b>Instalar este site como aplicativo</b>':'<b>⋮</b> › <b>Transmitir, salvar e compartilhar</b> › <b>Instalar página como app</b>'}.</li><li>Confirme em <b>Instalar</b>. O app aparece no menu Iniciar (Windows) ou no menu de aplicativos (Linux).</li></ol><p class="note">Se a opção não aparecer, recarregue a página uma vez e tente de novo.</p>`;
+  }
+  $('#instBody').innerHTML=h+note;
+  $('#instModal').classList.add('open');
+}
+$('#btnInstall').onclick=async()=>{
+  if(instEvt){
+    const ev=instEvt;instEvt=null;
+    try{await ev.prompt();const r=await ev.userChoice;if(r&&r.outcome==='dismissed')toast('Instalação cancelada. Você pode instalar depois pelo mesmo botão.');}
+    catch(e){installHelp();}
+    return;
+  }
+  installHelp();
+};
+$('#instClose').onclick=()=>$('#instModal').classList.remove('open');
+$('#instModal').addEventListener('click',e=>{if(e.target.id==='instModal')e.currentTarget.classList.remove('open');});
 })();
 </script>
 </body>
